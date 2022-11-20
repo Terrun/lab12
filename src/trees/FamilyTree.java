@@ -14,7 +14,6 @@ public class FamilyTree
         private String                    name;
         private TreeNode                parent;
         private ArrayList<TreeNode>        children;
-        private ArrayList<TreeNode>   parents;
         
         TreeNode(String name)
         {
@@ -44,18 +43,18 @@ public class FamilyTree
         TreeNode getNodeWithName(String targetName)
         {
             // Does this node have the target name?
-            if (name == null)
+            if (name.equals(targetName))
                 return this;
+            
                     
             // No, recurse. Check all children of this node.
             for (TreeNode child: children)
             {
                 // If child.getNodeWithName(targetName) returns a non-null node,
                 // then that's the node we're looking for. Return it.
-            	if(name == targetName)
-            	{
-            		return child;
-            	}
+            	TreeNode node = child.getNodeWithName(targetName);
+            	if(node != null)
+            		return node;
             }
             
             // Not found anywhere.
@@ -73,11 +72,16 @@ public class FamilyTree
             // the nodes of a tree is like traversing a linked list. If that isn’t clear,
             // draw a tree, mark any leaf node, and then mark its ancestors in order from
             // recent to ancient. Expect a question about this on the final exam.
-            for(int i = parents.size()-1; i >= 0; i--)
+            TreeNode parent = this.parent;
+            
+            while (parent != null)
             {
-            	ancestors.add(parents.get(i));
+            	ancestors.add(parent);
+            	parent = parent.parent;
             }
+            
             return ancestors;
+            
         }
         
         
@@ -97,7 +101,7 @@ public class FamilyTree
         }
     }
 
-	private TreeNode			root;
+	private TreeNode root;
 	
 	
 	//
@@ -141,8 +145,16 @@ public class FamilyTree
 			 throw new TreeException("illegal"); //a TreeException with a useful message
 		String parent = line.substring(0,colonIndex);//?? The substring of line that starts at char #0 and ends just before colonIndex. Check the API for 
 				          // class java.util.String, method substring(), if you need guidance.
-		String childrenString = line.substring(colonIndex, line.length()-1); //?? The substring of line that starts just after colonIndex and goes through the end of
+		if(parent == null)
+		{
+			throw new TreeException("Empty parent");
+		}
+		String childrenString = line.substring(colonIndex + 1, line.length()); //?? The substring of line that starts just after colonIndex and goes through the end of
 				                   //the line. You'll use a different version of substring().
+		if(childrenString == null)
+		{
+			throw new TreeException("Empty children");
+		}
 		String[] childrenArray = childrenString.split(","); //?? Call childrenString.split(). Check the API for details. The result will be an array
 				                    //of strings, with the separating commas thrown away.
 		
@@ -150,19 +162,22 @@ public class FamilyTree
 		// parent node must be constructed. Otherwise the parent node should be 
 		// somewhere in the tree.
 		TreeNode parentNode;
-		if (root == null)
+		if (root == null) {
 			parentNode = root = new TreeNode(parent);
-		else
-		{
-			parentNode = root;
-			if (parentNode == null) {
-				throw new TreeException("Parent tree empty");
-			}
-			
+		}
+		else {
+			parentNode = root.getNodeWithName(parent);
+			if(parentNode == null)
+				throw new TreeException("Node not found");
+		}
+		for(String child: childrenArray) {
+			TreeNode childNode = new TreeNode(child);
+			parentNode.addChild(childNode);
+		}
 			//?????  There's a method in Node that searches for a named node. 
 			//??? If the parent node wasn't found, there must have been something wrong in the 
 				//data file. Throw an exception.
-		}
+		
 		
 		// Add child nodes to parentNode.
 		//?? For each name in childrenArray, create a new node and add that node to parentNode.
@@ -186,20 +201,9 @@ public class FamilyTree
 			throw new TreeException("name2 is empty"); //??? Throw TreeException with a useful message
 		
 		// Get ancestors of node1 and node2.
-		ArrayList<TreeNode> ancestorsOf1 = new ArrayList<TreeNode>();
-		ArrayList<TreeNode> ancestorsOf2 = new ArrayList<TreeNode>();
-		
-		TreeNode currParent = node1.parent;
-		while(currParent != null)
-		{
-			ancestorsOf1.add(currParent);
-		}
-		
-		TreeNode currParent2 = node2.parent;
-		while(currParent != null)
-		{
-			ancestorsOf2.add(currParent2);
-		}
+		ArrayList<TreeNode> ancestorsOf1 = node1.collectAncestorsToList();
+		ArrayList<TreeNode> ancestorsOf2 = node2.collectAncestorsToList();
+	
 		
 		// Check members of ancestorsOf1 in order until you find a node that is also
 		// an ancestor of 2. 
